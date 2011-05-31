@@ -626,6 +626,9 @@ class UUID
   
   def self.convert_int_to_byte_string(integer, size) #:nodoc:
     byte_string = ""
+    if byte_string.respond_to?(:force_encoding)
+      byte_string.force_encoding(Encoding::ASCII_8BIT)
+    end
     for i in 0..(size - 1)
       byte_string << ((integer >> (((size - 1) - i) * 8)) & 0xFF)
     end
@@ -633,10 +636,14 @@ class UUID
   end
 
   def self.convert_byte_string_to_int(byte_string) #:nodoc:
+    if byte_string.respond_to?(:force_encoding)
+      byte_string.force_encoding(Encoding::ASCII_8BIT)
+    end
     integer = 0
     size = byte_string.size
     for i in 0..(size - 1)
-      integer += (byte_string[i] << (((size - 1) - i) * 8))
+      ordinal = (byte_string[i].respond_to?(:ord) ? byte_string[i].ord : byte_string[i])
+      integer += (ordinal << (((size - 1) - i) * 8))
     end
     return integer
   end
