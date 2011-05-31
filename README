@@ -1,4 +1,10 @@
-= Amazon Elastic Map Reduce Ruby Client Readme 
+= Amazon Elastic Map Reduce Ruby Client Readme (Unofficial Gem and Ruby 1.9 Version)
+
+== Usage
+  $ gem install elastic-mapreduce
+  $ elastic-mapreduce --help
+
+= Amazon Elastic Map Reduce Ruby Client Readme (Original)
 
 Location of the Ruby Client: 
 

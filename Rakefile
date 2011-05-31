@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.name = "elastic-mapreduce"
   gem.homepage = "http://github.com/hapyrus/elastic-mapreduce"
   gem.license = "Apache License"
-  gem.summary = %Q{Modified Amazon's commandline client for EMR (Elastic Map-Reduce) invocation}
-  gem.description = %Q{Original is official but this is Unofficial.}
+  gem.summary = %Q{Amazon's commandline client for EMR (Elastic Map-Reduce) invocation (Unofficial Gem and Ruby 1.9 Version)}
+  gem.description = %Q{Original is official but this is Unofficial gem.}
   gem.email = "fujibee@hapyrus.com"
   gem.authors = ["Amazon.com", "Koichi Fujikawa"]
   # dependencies defined in Gemfile
