@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{elastic-mapreduce}
-  s.version = "0.0.1"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Amazon.com", "Koichi Fujikawa"]
-  s.date = %q{2011-05-31}
+  s.date = %q{2011-06-01}
   s.default_executable = %q{elastic-mapreduce}
   s.description = %q{Original is official but this is Unofficial gem.}
   s.email = %q{fujibee@hapyrus.com}
@@ -28,7 +28,6 @@ Gem::Specification.new do |s|
     "Rakefile",
     "VERSION",
     "bin/elastic-mapreduce",
-    "cacert.pem",
     "elastic-mapreduce.gemspec",
     "lib/amazon/aws/exceptions.rb",
     "lib/amazon/coral/awsquery.rb",
@@ -60,6 +59,7 @@ Gem::Specification.new do |s|
     "lib/amazon/coral/v2signaturehelper.rb",
     "lib/amazon/retry_delegator.rb",
     "lib/amazon/stderr_logger.rb",
+    "lib/cacert.pem",
     "lib/client.rb",
     "lib/commands.rb",
     "lib/credentials.rb",
