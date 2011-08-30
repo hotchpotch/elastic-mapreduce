@@ -1051,7 +1051,7 @@ module Commands
 
   class AbstractInstanceGroupCommand < Command
     attr_accessor :instance_group_id, :instance_type, :instance_role, 
-      :instance_count, :instance_group_name
+      :instance_count, :instance_group_name, :bid_price
 
     def initialize(*args)
       super(*args)
@@ -1067,13 +1067,19 @@ module Commands
     end
 
     def instance_group
-      return {
+      ig =  {
         "Name" => get_field(:instance_group_name),
-        "Market" => get_field(:instance_group_market, "ON_DEMAND"),
         "InstanceRole" => get_field(:instance_role),
         "InstanceCount" => get_field(:instance_count),
         "InstanceType"  => get_field(:instance_type)
       }
+      if get_field(:bid_price, nil) != nil
+        ig["BidPrice"] = get_field(:bid_price)
+        ig["Market"] = "SPOT"
+      else
+        ig["Market"] = "ON_DEMAND"
+      end
+      return ig
     end
 
     def require_singleton_array(arr, msg)
@@ -1398,6 +1404,9 @@ module Commands
       [ FlagOption,    "--plain-output",              "Return the job flow id from create step as simple text", :plain_output ],
     ])
     commands.parse_command(CreateInstanceGroupCommand, "--instance-group ROLE", "Specify an instance group while creating a jobflow")
+    commands.parse_options(["--instance-group", "--add-instance-group"], [
+      [OptionWithArg, "--bid-price PRICE",        "The bid price for this instance group", :bid_price]
+    ])
 
     opts.separator "\n  Passing arguments to steps\n"
     
@@ -1688,3 +1697,4 @@ module Commands
     end
   end 
 end
+
