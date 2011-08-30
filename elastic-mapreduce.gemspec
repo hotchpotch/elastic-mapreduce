@@ -5,15 +5,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{elastic-mapreduce}
-  s.version = "0.0.2"
+  s.version = "0.0.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Amazon.com", "Koichi Fujikawa"]
-  s.date = %q{2011-06-01}
-  s.default_executable = %q{elastic-mapreduce}
+  s.authors = [%q{Amazon.com}, %q{Koichi Fujikawa}]
+  s.date = %q{2011-08-30}
   s.description = %q{Original is official but this is Unofficial gem.}
   s.email = %q{fujibee@hapyrus.com}
-  s.executables = ["elastic-mapreduce"]
+  s.executables = [%q{elastic-mapreduce}]
   s.extra_rdoc_files = [
     "LICENSE.txt",
     "README"
@@ -80,13 +79,12 @@ Gem::Specification.new do |s|
     "tests/example.json"
   ]
   s.homepage = %q{http://github.com/hapyrus/elastic-mapreduce}
-  s.licenses = ["Apache License"]
-  s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.7}
+  s.licenses = [%q{Apache License}]
+  s.require_paths = [%q{lib}]
+  s.rubygems_version = %q{1.8.8}
   s.summary = %q{Amazon's commandline client for EMR (Elastic Map-Reduce) invocation (Unofficial Gem and Ruby 1.9 Version)}
 
   if s.respond_to? :specification_version then
-    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
