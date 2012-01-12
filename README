@@ -4,7 +4,9 @@
   $ gem install elastic-mapreduce
   $ elastic-mapreduce --help
 
-= Amazon Elastic Map Reduce Ruby Client Readme (Original)
+== Original Readme
+
+= Amazon Elastic Map Reduce Ruby Client Readme 
 
 Location of the Ruby Client: 
 
@@ -132,7 +134,7 @@ http://aws.amazon.com website under "Your Account/Access Identifiers"
     "private-key": "<insert your AWS secret access key here>",
     "key-pair": "<insert the name of your Amazon ec2 key-pair here>",
     "key-pair-file": "<insert the path to the .pem file for your Amazon ec2 key pair here>",
-    "region": "<The region where you wish to launch your job flows. Should be one of us-east-1, us-west-1, eu-west-1, ap-southeast-1 or ap-northeast-1>"    
+    "region": "<The region where you wish to launch your job flows. Should be one of us-east-1, us-west-1, us-west-2, eu-west-1, ap-southeast-1, or ap-northeast-1, sa-east-1>"    
   }
 
 Windows Users: If you are running a Windows computer then create a

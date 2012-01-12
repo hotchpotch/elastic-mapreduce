@@ -1,0 +1,3 @@
+[submodule "vendor/elastic-mapreduce-ruby"]
+	path = vendor/elastic-mapreduce-ruby
+	url = git://github.com/tc/elastic-mapreduce-ruby.git

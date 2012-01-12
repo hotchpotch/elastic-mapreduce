@@ -25,6 +25,43 @@ Jeweler::Tasks.new do |gem|
 end
 Jeweler::RubygemsDotOrgTasks.new
 
+require 'fileutils'
+
+desc 'update files from original git repository'
+task :update do
+  system 'git submodule update --init'
+  include FileUtils
+
+  rm_r('lib')
+  mkdir_p('lib')
+
+  target_dir = 'vendor/elastic-mapreduce-ruby/'
+
+  Dir.glob(target_dir + '*').each do |file|
+    case file
+    when /\/(amazon|json|uuidtools|.*\.rb|cacert\.pem)$/
+      cp_r(file, 'lib/')
+    when /\/elastic-mapreduce$/
+      cp_r(file, 'bin/')
+    else
+      cp_r(file, '.')
+    end
+  end
+
+  readme = File.read('README')
+  File.open('README', 'w') {|f|
+    f.puts File.read('README.header')
+    f.puts readme
+  }
+
+  last_changelog_date = File.read('CHANGELOG').scan(/^==\s+(\d+-\d+-\d+)/m).flatten.last
+  open('VERSION', 'w') {|f|
+    f.puts last_changelog_date.gsub('-', '.')
+  }
+
+  Rake::Task["gemspec:generate"].invoke
+end
+
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'

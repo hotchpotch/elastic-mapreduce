@@ -10,7 +10,7 @@ require 'open3'
 
 module Commands
 
-  ELASTIC_MAPREDUCE_CLIENT_VERSION = "2010-11-11"
+  ELASTIC_MAPREDUCE_CLIENT_VERSION = "2011-11-23"
 
   class Commands
     attr_accessor :opts, :global_options, :commands, :logger, :executor
@@ -514,6 +514,11 @@ module Commands
 
     GENERIC_OPTIONS = Set.new(%w(-conf -D -fs -jt -files -libjars -archives))
 
+    def initialize(*args)
+      super(*args)
+      @jobconf = []
+    end
+
     def steps
       timestr = Time.now.strftime("%Y-%m-%dT%H%M%S")
       stream_options = []
@@ -574,6 +579,24 @@ module Commands
     CLOSED_DOWN_STATES        = Set.new(%w(TERMINATED SHUTTING_DOWN COMPLETED FAILED))
     WAITING_OR_RUNNING_STATES = Set.new(%w(WAITING RUNNING))
 
+    def initialize(*args)
+      super(*args)
+      @ssh_opts = ["-o ServerAliveInterval=10", "-o StrictHostKeyChecking=no"]
+      @scp_opts = ["-r"]
+    end  
+
+    def opts
+      (get_field(:ssh_opts, []) + get_field(:scp_opts, [])).join(" ")
+    end
+
+    def get_ssh_opts
+      get_field(:ssh_opts, []).join(" ")
+    end
+
+    def get_scp_opts
+      get_field(:scp_opts, []).join(" ")
+    end
+
     def exec(cmd)
       commands.exec(cmd)
     end
@@ -605,7 +628,7 @@ module Commands
   end
 
   class SSHCommand < AbstractSSHCommand
-    attr_accessor :cmd
+    attr_accessor :cmd, :ssh_opts, :scp_opts
     
     def initialize(*args)
       super(*args)
@@ -618,7 +641,7 @@ module Commands
 
     def enact(client)
       super(client)
-      exec "ssh -i #{key_pair_file} hadoop@#{hostname} #{get_field(:cmd, "")}"
+      exec "ssh #{get_ssh_opts} -i #{key_pair_file} hadoop@#{hostname} #{get_field(:cmd, "")}"
     end
   end
 
@@ -626,9 +649,9 @@ module Commands
     def enact(client)
       super(client)
       if get_field(:dest) then
-        exec "scp -i #{key_pair_file} #{@arg} hadoop@#{hostname}:#{get_field(:dest)}"
+        exec "scp #{self.get_scp_opts} -i #{key_pair_file} #{@arg} hadoop@#{hostname}:#{get_field(:dest)}"
       else
-        exec "scp -i #{key_pair_file} #{@arg} hadoop@#{hostname}:#{File.basename(@arg)}"
+        exec "scp #{self.get_scp_opts} -i #{key_pair_file} #{@arg} hadoop@#{hostname}:#{File.basename(@arg)}"
       end
     end
   end
@@ -637,9 +660,9 @@ module Commands
     def enact(client)
       super(client)
       if get_field(:dest) then
-        exec "scp -i #{key_pair_file} hadoop@#{hostname}:#{@arg} #{get_field(:dest)}"
+        exec "scp #{self.get_scp_opts} -i #{key_pair_file} hadoop@#{hostname}:#{@arg} #{get_field(:dest)}"
       else
-        exec "scp -i #{key_pair_file} hadoop@#{hostname}:#{@arg} #{File.basename(@arg)}"
+        exec "scp #{self.get_scp_opts} -i #{key_pair_file} hadoop@#{hostname}:#{@arg} #{File.basename(@arg)}"
       end
     end
   end
@@ -757,15 +780,21 @@ module Commands
 
   class CreateJobFlowCommand < StepProcessingCommand
     attr_accessor :jobflow_name, :alive, :with_termination_protection, :instance_count, :slave_instance_type, 
-      :master_instance_type, :key_pair, :key_pair_file, :log_uri, :az, :ainfo,
+      :master_instance_type, :key_pair, :key_pair_file, :log_uri, :az, :ainfo, :ami_version, :with_supported_products,
       :hadoop_version, :plain_output, :instance_type,
-      :instance_group_commands, :bootstrap_commands
+      :instance_group_commands, :bootstrap_commands, :subnet_id
 
 
     OLD_OPTIONS = [:instance_count, :slave_instance_type, :master_instance_type]
     # FIXME: add code to setup collapse instance group commands
 
-    DEFAULT_HADOOP_VERSION = "0.20"
+    def default_hadoop_version
+      if get_field(:ami_version) == "1.0" then
+        "0.20"
+      else
+        "0.20.205"
+      end
+    end
 
     def initialize(*args)
       super(*args)
@@ -796,9 +825,6 @@ module Commands
         cmd.validate
       end
 
-      if ! have(:hadoop_version) then
-        @hadoop_version = DEFAULT_HADOOP_VERSION
-      end
     end
 
     def enact(client)
@@ -809,6 +835,10 @@ module Commands
       apply_jobflow_option(:hadoop_version, "Instances", "HadoopVersion")
       apply_jobflow_option(:az, "Instances", "Placement", "AvailabilityZone")
       apply_jobflow_option(:log_uri, "LogUri")
+      apply_jobflow_option(:ami_version, "AmiVersion")
+      apply_jobflow_option(:subnet_id, "Instances", "Ec2SubnetId")
+ 
+      @jobflow["AmiVersion"] ||= "latest"
 
       self.step_commands = reorder_steps(@jobflow, self.step_commands)
       @jobflow["Steps"] = step_commands.map { |x| x.steps }.flatten
@@ -836,7 +866,7 @@ module Commands
 
     def apply_jobflow_option(field_symbol, *keys)
       value = get_field(field_symbol)
-      if value != nil then
+      if value != nil then 
         map = @jobflow
         for key in keys[0..-2] do
           nmap = map[key]
@@ -899,6 +929,12 @@ module Commands
         "Steps" => [],
         "BootstrapActions" => []
       }
+      products_string = get_field(:with_supported_products)
+      if products_string then
+        products = products_string.split(/,/).map { |s| s.strip }
+        @jobflow["SupportedProducts"] = products
+      end
+      @jobflow
     end
 
     def default_job_flow_name
@@ -931,7 +967,7 @@ module Commands
   end
 
   class AbstractListCommand < Command
-    attr_accessor :state, :max_results, :active, :all, :no_steps
+    attr_accessor :state, :max_results, :active, :all, :no_steps, :created_after, :created_before
 
     def enact(client)
       options = {}
@@ -942,15 +978,17 @@ module Commands
         if get_field(:active) then
           states = %w(RUNNING SHUTTING_DOWN STARTING WAITING BOOTSTRAPPING)
         end
-        if get_field(:states) then
-          states += get_field(states)
+        if get_field(:state) then
+          states << get_field(:state)
         end
-        if get_field(:active) || get_field(:states) then
-          options = { 'JobFlowStates' => states }
-        elsif get_field(:all) then
-          options = { }
+
+        if get_field(:all) then
+          options = { 'CreatedAfter' => (Time.now - (58 * 24 * 3600)).xmlschema }
         else
-          options = { 'CreatedAfter' => (Time.now - (2 * 24 * 3600)).xmlschema }
+          options = {}
+          options['CreatedAfter']  = get_field(:created_after) if get_field(:created_after)
+          options['CreatedBefore'] = get_field(:created_before) if get_field(:created_before)
+          options['JobFlowStates'] = states if states.size > 0
         end
       end
       result = client.describe_jobflow(options)
@@ -1318,6 +1356,19 @@ module Commands
       end
     end
 
+    def region_from_az(az)
+      md = az.match(/((\w+-)+\d+)\w+/)
+      if md then
+        md[1]
+      else
+        raise "Unable to convert Availability Zone '#{az}' to region"
+      end
+    end
+
+    def ec2_endpoint_from_az(az)
+      return "https://ec2.#{region_from_az(az)}.amazonaws.com"      
+    end
+
     def enact(client)
       self.jobflow_id = require_single_jobflow
       self.jobflow_detail = client.describe_jobflow_with_id(self.jobflow_id)
@@ -1330,21 +1381,9 @@ module Commands
         exit(-1)
       end
 
-      ec2_endpoint = "https://ec2.amazonaws.com"
       az = self.jobflow_detail['Instances']['Placement']['AvailabilityZone']
-      reg_length = "us-east-1".length
-      if az[0, reg_length] == "us-east-1" then
-        ec2_endpoint = "https://ec2.us-east-1.amazonaws.com"
-      elsif az[0, reg_length] == "us-west-1" then
-        ec2_endpoint = "https://ec2.us-west-1.amazonaws.com"
-      elsif az[0, reg_length] == "eu-west-1" then
-        ec2_endpoint = "https://ec2.eu-west-1.amazonaws.com"
-      elsif az[0, reg_length] == "ap-southeast-1" then
-        ec2_endpoint = "https://ec2.ap-southeast-1.amazonaws.com"
-      elsif az[0, reg_length] == "ap-northeast-1" then
-        ec2_endpoint = "https://ec2.ap-northeast-1.amazonaws.com"
-      end
-      commands.global_options[:ec2_endpoint] = ec2_endpoint
+
+      commands.global_options[:ec2_endpoint] = ec2_endpoint_from_az(az)
       
       self.key_pair_file = require(:key_pair_file, "Missing required option --key-pair-file for #{name}")
       eip = get_field(:arg)
@@ -1394,14 +1433,17 @@ module Commands
       [ OptionWithArg, "--name NAME",                 "The name of the job flow being created", :jobflow_name ],
       [ FlagOption,    "--alive",                     "Create a job flow that stays running even though it has executed all its steps", :alive ],
       [ OptionWithArg, "--with-termination-protection",   "Create a job with termination protection (default is no termination protection)", :with_termination_protection ],
+      [ OptionWithArg, "--with-supported-products PRODUCTS",   "Add supported products", :with_supported_products ],
       [ OptionWithArg, "--num-instances NUM",         "Number of instances in the job flow", :instance_count ],
       [ OptionWithArg, "--slave-instance-type TYPE",  "The type of the slave instances to launch", :slave_instance_type ],
       [ OptionWithArg, "--master-instance-type TYPE", "The type of the master instance to launch", :master_instance_type ],
+      [ OptionWithArg, "--ami-version VERSION",       "The version of ami to launch the job flow with", :ami_version ],
       [ OptionWithArg, "--key-pair KEY_PAIR",         "The name of your Amazon EC2 Keypair", :key_pair ], 
       [ OptionWithArg, "--availability-zone A_Z",     "Specify the Availability Zone in which to launch the job flow", :az ],
       [ OptionWithArg, "--info INFO",                 "Specify additional info to job flow creation", :ainfo ],
       [ OptionWithArg, "--hadoop-version INFO",       "Specify the Hadoop Version to install", :hadoop_version ],
       [ FlagOption,    "--plain-output",              "Return the job flow id from create step as simple text", :plain_output ],
+      [ OptionWithArg, "--subnet EC2-SUBNET_ID",      "Specify the VPC subnet that you want to run in", :subnet_id ],
     ])
     commands.parse_command(CreateInstanceGroupCommand, "--instance-group ROLE", "Specify an instance group while creating a jobflow")
     commands.parse_options(["--instance-group", "--add-instance-group"], [
@@ -1441,6 +1483,7 @@ module Commands
     commands.parse_command(HiveSiteCommand, "--hive-site HIVE_SITE", "Override Hive configuration with configuration from HIVE_SITE")
     commands.parse_options(["--hive-script", "--hive-interactive", "--hive-site"], [
       [ OptionWithArg,     "--hive-versions VERSIONS", "A comma separated list of Hive version", :hive_versions],
+      [ OptionWithArg, "--step-action STEP_ACTION", "Action to take when step finishes. One of CANCEL_AND_WAIT, TERMINATE_JOB_FLOW or CONTINUE", :step_action ],
     ])
     
     opts.separator "\n  Adding Jar Steps to Job Flows\n"
@@ -1519,7 +1562,9 @@ module Commands
     commands.parse_options(["--list", "--describe"], [
       [ OptionWithArg, "--state NAME",   "Set the name of the bootstrap action", :state ],
       [ FlagOption,    "--active",       "List running, starting or shutting down job flows", :active ],
-      [ FlagOption,    "--all",          "List all job flows in the last 2 months", :all ],
+      [ FlagOption,    "--all",          "List all job flows in the last 2 weeks", :all ],
+      [ OptionWithArg,    "--created-after=DATETIME", "List all jobflows created after DATETIME (xml date time format)", :created_after],
+      [ OptionWithArg,    "--created-before=DATETIME", "List all jobflows created before DATETIME (xml date time format)", :created_before],
       [ FlagOption,    "--no-steps",     "Do not list steps when listing jobs", :no_steps ],
     ])
     
@@ -1697,4 +1742,3 @@ module Commands
     end
   end 
 end
-

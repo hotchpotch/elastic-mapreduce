@@ -47,7 +47,7 @@ module Amazon
         return if obj.nil?
         
         case obj
-        when Hash
+        when Hash then
 
             obj.each_pair { |k,v|
             stack.push(k)
@@ -55,7 +55,7 @@ module Amazon
             stack.pop
           }
 
-        when Array
+        when Array then
 
             # Do artificial list member wrapping (Coral requires this
             # level of indirection, but doesn't validate the member name)
@@ -69,7 +69,6 @@ module Amazon
           }
 
           stack.pop
-
         else
 
           # this works for symbols also, because sym.id2name == sym.to_s

@@ -4,26 +4,29 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{elastic-mapreduce}
-  s.version = "0.0.3"
+  s.name = "elastic-mapreduce"
+  s.version = "2011.11.23"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = [%q{Amazon.com}, %q{Koichi Fujikawa}]
-  s.date = %q{2011-08-30}
-  s.description = %q{Original is official but this is Unofficial gem.}
-  s.email = %q{fujibee@hapyrus.com}
-  s.executables = [%q{elastic-mapreduce}]
+  s.authors = ["Amazon.com", "Koichi Fujikawa"]
+  s.date = "2012-01-12"
+  s.description = "Original is official but this is Unofficial gem."
+  s.email = "fujibee@hapyrus.com"
+  s.executables = ["elastic-mapreduce"]
   s.extra_rdoc_files = [
     "LICENSE.txt",
-    "README"
+    "README",
+    "README.header"
   ]
   s.files = [
+    ".gitmodules",
     "CHANGELOG",
     "Gemfile",
     "Gemfile.lock",
     "LICENSE.txt",
     "NOTICE.txt",
     "README",
+    "README.header",
     "Rakefile",
     "VERSION",
     "bin/elastic-mapreduce",
@@ -63,9 +66,11 @@ Gem::Specification.new do |s|
     "lib/commands.rb",
     "lib/credentials.rb",
     "lib/ec2_client_wrapper.rb",
+    "lib/elastic-mapreduce-cli.rb",
     "lib/json.rb",
     "lib/json/lexer.rb",
     "lib/json/objects.rb",
+    "lib/run_tests.rb",
     "lib/simple_executor.rb",
     "lib/simple_logger.rb",
     "lib/uuidtools.rb",
@@ -78,11 +83,11 @@ Gem::Specification.new do |s|
     "tests/credentials.json",
     "tests/example.json"
   ]
-  s.homepage = %q{http://github.com/hapyrus/elastic-mapreduce}
-  s.licenses = [%q{Apache License}]
-  s.require_paths = [%q{lib}]
-  s.rubygems_version = %q{1.8.8}
-  s.summary = %q{Amazon's commandline client for EMR (Elastic Map-Reduce) invocation (Unofficial Gem and Ruby 1.9 Version)}
+  s.homepage = "http://github.com/hapyrus/elastic-mapreduce"
+  s.licenses = ["Apache License"]
+  s.require_paths = ["lib"]
+  s.rubygems_version = "1.8.11"
+  s.summary = "Amazon's commandline client for EMR (Elastic Map-Reduce) invocation (Unofficial Gem and Ruby 1.9 Version)"
 
   if s.respond_to? :specification_version then
     s.specification_version = 3

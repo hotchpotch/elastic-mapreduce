@@ -20,7 +20,9 @@ class EmrClient
       :aws_secret_key      => @options[:aws_secret_key],
       :signature_algorithm => :V2,
       :content_type        => 'JSON',
-      :verbose             => (@options[:verbose] != nil)
+      :verbose             => (@options[:verbose] != nil),
+      :connect_timeout     => 60.0,
+      :timeout             => 160.0
     }
 
     @client = Amazon::RetryDelegator.new(

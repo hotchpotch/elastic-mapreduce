@@ -582,6 +582,16 @@ module Commands
         @commands = create_and_execute_commands(args)
       end
     end
+    
+    def test_region_from_az
+      @commands = create_and_execute_commands("-c tests/credentials.json")
+      eip_command = EipCommand.new("eip-command", "eip-command", "arg", @commands)
+      assert_equal('https://ec2.us-east-1.amazonaws.com', eip_command.ec2_endpoint_from_az('us-east-1a'))
+      assert_equal('https://ec2.ap-northeast-1.amazonaws.com', eip_command.ec2_endpoint_from_az('ec2.ap-northeast-1b'))
+      assert_equal('https://ec2.us-west-1.amazonaws.com', eip_command.ec2_endpoint_from_az('ec2.us-west-1b'))
+      assert_equal('https://ec2.us-west-2.amazonaws.com', eip_command.ec2_endpoint_from_az('ec2.us-west-2b'))
+      assert_equal('https://ec2.sa-east-1.amazonaws.com', eip_command.ec2_endpoint_from_az('ec2.sa-east-1b'))
+    end
 
   end
 end
